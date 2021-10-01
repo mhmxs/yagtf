@@ -16,21 +16,24 @@ The only thing you have to do after you have removed all other testing framework
 import _ "github.com/mhmxs/yagtf/pkg/framework"
 ```
 
-## Example of mocking
+### Examples
 
 Here is a piece of code to test.
 ```
 type someSideEffect interface {
-    Get() (string, error)
+    Get(string) (string, error)
 }
 
 func someFunction(se someSideEffect) string {
-    data, err := se()
+    data, err := se("foo")
     // Business logic
+    return "bar"
 }
 ```
 
-Testing `someFunction` is really easy with Yagt.
+#### Example of mocking
+
+Testing of `someFunction` is really easy with Yagt.
 
 ```
 import (
@@ -40,13 +43,46 @@ import (
 
 type mockSideEffect struct{}
 
-func (ms mockSideEffect) Get() (string, error) {
+func (ms mockSideEffect) Get(string) (string, error) {
     return "some data", nil
 }
 
 func TestSomeFunction(t *testing.T) {
-    if "" == someFunction(mockSideEffect{}) {
-        t.Error("test didn't pass")
+    if "bar" != someFunction(mockSideEffect{}) {
+        t.Error("Return value is not expected")
+    }
+}
+
+```
+
+#### Example of spying
+
+Testing of `Get` function parameter is really easy with Yagt.
+
+```
+import (
+    "testing"
+    _ "github.com/mhmxs/yagtf/pkg/framework"
+)
+
+type mockSideEffect struct{
+    param chan string
+}
+
+func (ms mockSideEffect) Get(param string) (string, error) {
+    ms.param <- param
+    return "some data", nil
+}
+
+func TestSomeFunction(t *testing.T) {
+    mock := mockSideEffect{param: make(chan string, 1)}
+    defer close(mock.param)
+
+    if "bar" != someFunction(mockSideEffect{}) {
+        t.Error("Return value is not expected")
+    }
+    if "foo" != <-ms.param {
+        t.Error("Parameter value is not expected")
     }
 }
 
