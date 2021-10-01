@@ -78,10 +78,10 @@ func TestSomeFunction(t *testing.T) {
     mock := mockSideEffect{param: make(chan string, 1)}
     defer close(mock.param)
 
-    if "bar" != someFunction(mockSideEffect{}) {
+    if "bar" != someFunction(mock) {
         t.Error("Return value is not expected")
     }
-    if "foo" != <-ms.param {
+    if "foo" != <-mock.param {
         t.Error("Parameter value is not expected")
     }
 }
